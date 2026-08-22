@@ -81,7 +81,7 @@ export const customerApi = createApi({
   }),
 });
 
-// ✅ Restored the missing useGetCustomersQuery export at the bottom!
+
 export const {
   useGetStorefrontProductsQuery,
   useGetStorefrontProductByIdQuery,
