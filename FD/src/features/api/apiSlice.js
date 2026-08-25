@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "/api",
+  baseUrl: '/api/v1',
   prepareHeaders: (headers, { getState }) => {
     let token = getState().auth?.token;
     

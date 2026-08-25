@@ -6,7 +6,7 @@ const productSchema = new mongoose.Schema(
     merchantId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: 'User', // Links this product to the merchant who created it
+      ref: 'User',
     },
     
     // --- STEP 01: BASIC DETAILS ---
@@ -21,24 +21,38 @@ const productSchema = new mongoose.Schema(
       min: [0, 'Price cannot be negative'],
       default: 0 
     },
+    
+    // 🔥 FIX 1: MOVED TO TOP LEVEL & ENUMS UPDATED TO MATCH NAVBAR
+    category: {
+      type: String,
+      required: [true, 'Please select a category'],
+      enum: ['Assets', 'Fine Art', 'Industrial', 'Brands', 'Collection'], 
+      default: 'Collection'
+    },
+    
     status: {
       type: String,
       enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'],
       default: 'DRAFT',
     },
 
+    // 🔥 FIX 2: MOVED REVIEWS TO TOP LEVEL
+    averageRating: {
+      type: Number,
+      min: [0, 'Rating cannot be negative'], 
+      max: [5, 'Rating cannot be more than 5'],
+      default: 0
+    },
+    numOfReviews: {
+      type: Number,
+      default: 0
+    },
+
     // --- STEP 02: MEDIA & DETAILS ---
     images: [
       {
-        url: { 
-          type: String, 
-          required: true,
-          trim: true
-        },
-        isMain: { 
-          type: Boolean, 
-          default: false 
-        },
+        url: { type: String, required: true, trim: true },
+        isMain: { type: Boolean, default: false },
       },
     ],
     editorialNarrative: {
@@ -50,9 +64,9 @@ const productSchema = new mongoose.Schema(
       dimensions: {
         width: { type: Number, min: 0 },
         height: { type: Number, min: 0 },
-        depth: { type: Number, min: 0 }, // Stored in CM
+        depth: { type: Number, min: 0 },
       },
-      weightCapacity: { type: Number, min: 0 }, // Stored in KG
+      weightCapacity: { type: Number, min: 0 },
       availablePalettes: [{ type: String, trim: true }], 
     },
 
@@ -63,40 +77,18 @@ const productSchema = new mongoose.Schema(
         required: [true, 'Please add a SKU'], 
         unique: true,
         trim: true,
-        uppercase: true // Enforces clean, standard SKU formatting
+        uppercase: true 
       },
-      category: {
-      type: String,
-      required: [true, 'Please select a category'],
-      enum: ['Electronics', 'Furniture', 'Clothing', 'Beauty', 'Sports', 'Other'], // Customize these based on your app
-      default: 'Other'
-    },
-    averageRating: {
-      type: Number,
-      min: [0, 'Rating cannot be negative'], 
-      max: [5, 'Rating cannot be more than 5'],
-      default: 0
-    },
-    numOfReviews: {
-      type: Number,
-      default: 0
-    },
       stockQuantity: { 
         type: Number, 
         required: [true, 'Please add stock quantity'], 
         min: [0, 'Stock cannot be negative'],
         default: 0 
       },
-      lowStockAlert: { 
-        type: Number, 
-        min: 0,
-        default: 5 
-      },
-      displayStockCount: { 
-        type: Boolean, 
-        default: false 
-      },
+      lowStockAlert: { type: Number, min: 0, default: 5 },
+      displayStockCount: { type: Boolean, default: false },
     },
+    
     shipping: {
       itemWeight: { type: Number, min: 0 },
       packageDimensions: {

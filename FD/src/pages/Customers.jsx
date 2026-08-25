@@ -10,7 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { useGetCustomersQuery } from "../features/api/customerApi";
+import { useGetCustomersQuery } from "../features/api/customerApi.js?t=1";
 
 // Safely commented out until you confirm the exact file location
 // import CustomerDrawer from "./Dashboard/CustomerDrawer";
@@ -20,13 +20,18 @@ const TABS = ["All Customers", "VIP Segments", "New Arrivals", "Inactive"];
 export default function Customers() {
   const [activeTab, setActiveTab] = useState("All Customers");
   const [visibleCount, setVisibleCount] = useState(4);
-  // Fixed: properly defined selectedCustomer to prevent eslint errors
+  
+  // eslint-disable-next-line no-unused-vars
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // 1. FIRE THE NETWORK REQUEST
-  const { data: customers = [], isLoading, isError } = useGetCustomersQuery();
+  const { data, isLoading, isError } = useGetCustomersQuery();
 
-  // 2. APPLY YOUR FILTERING LOGIC TO THE LIVE DATA
+  // Safely extracts the array and memoizes it to satisfy ESLint dependency rules
+  const customers = useMemo(() => {
+    return Array.isArray(data) ? data : data?.customers || data?.data || [];
+  }, [data]);
+
+  // APPLY YOUR FILTERING LOGIC TO THE LIVE DATA
   const filteredCustomers = useMemo(() => {
     return customers.filter((customer) => {
       if (activeTab === "All Customers") return true;
@@ -87,7 +92,7 @@ export default function Customers() {
     }
   };
 
-  // 3. HANDLE LOADING STATE GRACEFULLY
+  // HANDLE LOADING STATE GRACEFULLY
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-100">
@@ -99,7 +104,7 @@ export default function Customers() {
     );
   }
 
-  // 4. HANDLE ERROR STATE
+  // HANDLE ERROR STATE
   if (isError) {
     return (
       <div className="flex items-center justify-center min-h-100 text-red-500 font-bold">
@@ -350,15 +355,11 @@ export default function Customers() {
         </motion.div>
       )}
 
-      {/* Safely Commented Out Drawer to Prevent Crashes!
-        Notice how this entire block is wrapped safely inside standard JSX comments. 
-      */}
       {/* <CustomerDrawer 
         isOpen={!!selectedCustomer}
         onClose={() => setSelectedCustomer(null)}
         customer={selectedCustomer}
-      /> 
-      */}
+      /> */}
     </motion.div>
   );
 }

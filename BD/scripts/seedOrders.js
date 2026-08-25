@@ -72,11 +72,11 @@ const seedDatabase = async () => {
     // ==========================================
     // 5. SEED PRODUCTS
     // ==========================================
-    // We use .create() with an array to insert multiple documents safely
     const products = await Product.create([
       {
         merchantId: merchantUser._id,
         title: 'Mid-Century Modern Leather Sofa',
+        category: 'Assets', // 🔥 Changed to capital 'Assets'
         price: 899.99,
         status: 'ACTIVE',
         images: [{ url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc', isMain: true }],
@@ -87,11 +87,23 @@ const seedDatabase = async () => {
       {
         merchantId: merchantUser._id,
         title: 'Solid Oak Dining Table',
+        category: 'Industrial', // 🔥 Changed to capital 'Industrial'
         price: 1250.00,
         status: 'ACTIVE',
         images: [{ url: 'https://images.unsplash.com/photo-1577140917170-285929fb55b7', isMain: true }],
         technicalSpecs: { primaryMaterial: 'Wood', finish: 'Natural Oak' },
         inventory: { sku: 'TABLE-OAK-02', stockQuantity: 5 },
+        shipping: { shippingClass: 'Heavy/Bulky' }
+      },
+      {
+        merchantId: merchantUser._id,
+        title: 'Calacatta Gold Italian Marble Slab',
+        category: 'Collection', // 🔥 Changed from 'architectural' to 'Collection' to match your schema
+        price: 3200.00,
+        status: 'ACTIVE',
+        images: [{ url: 'https://images.unsplash.com/photo-1600607686527-6fb886090705', isMain: true }],
+        technicalSpecs: { primaryMaterial: 'Marble', finish: 'Polished' },
+        inventory: { sku: 'ARC-MAR-001', stockQuantity: 15 },
         shipping: { shippingClass: 'Heavy/Bulky' }
       }
     ]);

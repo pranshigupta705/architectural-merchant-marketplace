@@ -7,34 +7,45 @@ import { ApiError } from '../../utils/ApiError.js';
  * @access  Public
  */
 export const getProducts = async (req, res, next) => {
-  try {
-    const pageSize = Number(req.query.limit) || 10;
-    const page = Number(req.query.page) || 1;
 
-    // 1. Build Advanced Query Object
+  
+  try {
+    // 1. Safely parse pagination parameters
+    console.log("🚦 TRACE 1: Entered createProduct controller!");
+    console.log("🖼️ Files received:", req.files ? req.files.length : 0);
+    console.log("📦 Body received:", req.body.title);
+    const pageSize = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    
+    // 2. Build Advanced Query Object safely
     const queryObj = {};
 
-    // Search Keyword setup
-    if (req.query.keyword) {
+    if (req.query.keyword && req.query.keyword.trim() !== '') {
       queryObj.$or = [
-        { title: { $regex: req.query.keyword, $options: 'i' } },
-        { 'inventory.sku': { $regex: req.query.keyword, $options: 'i' } }
+        { title: { $regex: req.query.keyword.trim(), $options: 'i' } },
+        { 'inventory.sku': { $regex: req.query.keyword.trim(), $options: 'i' } }
       ];
     }
 
-    // Filter by Status (e.g., ?status=ACTIVE)
-    if (req.query.status) {
-      queryObj.status = req.query.status;
+    if (req.query.category && req.query.category.trim() !== '') {
+      queryObj.category = { $regex: req.query.category.trim(), $options: 'i' };
     }
 
-    // Filter by Price Range (e.g., ?minPrice=100&maxPrice=500)
-    if (req.query.minPrice || req.query.maxPrice) {
+    if (req.query.status && req.query.status.trim() !== '') {
+      queryObj.status = req.query.status.trim();
+    }
+
+    // 3. Robust Price Filtering (Prevents NaN database crashes)
+    const minP = parseFloat(req.query.minPrice);
+    const maxP = parseFloat(req.query.maxPrice);
+
+    if (!isNaN(minP) || !isNaN(maxP)) {
       queryObj.price = {};
-      if (req.query.minPrice) queryObj.price.$gte = Number(req.query.minPrice);
-      if (req.query.maxPrice) queryObj.price.$lte = Number(req.query.maxPrice);
+      if (!isNaN(minP)) queryObj.price.$gte = minP;
+      if (!isNaN(maxP)) queryObj.price.$lte = maxP;
     }
 
-    // Execute Query in parallel for maximum performance
+    // 4. Execute Highly Optimized Queries Concurrently
     const [count, products] = await Promise.all([
       Product.countDocuments(queryObj),
       Product.find(queryObj)
@@ -42,10 +53,10 @@ export const getProducts = async (req, res, next) => {
         .limit(pageSize)
         .skip(pageSize * (page - 1))
         .sort({ createdAt: -1 })
-        .lean() // Highly optimized read-only query
+        .lean() // Strips Mongoose overhead for faster reads
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: products,
       pagination: {
@@ -68,7 +79,7 @@ export const getProductById = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate('merchantId', 'name email')
-      .lean(); // Optimized read
+      .lean();
 
     if (!product) {
       return next(new ApiError(404, 'Product not found'));
@@ -89,20 +100,20 @@ export const createProduct = async (req, res, next) => {
   try {
     let productData = { ...req.body, merchantId: req.user._id };
 
-    // 1. Handle Image Uploads from Multer
-    if (req.files && req.files.length > 0) {
-      const imagesArray = req.files.map((file, index) => ({
-        url: file.path, // This is the Cloudinary URL returned by multer-storage-cloudinary
-        isMain: index === 0 // Make the first uploaded image the main one
+    // Handle Image Uploads from Multer
+    if (req.files?.length > 0) {
+      productData.images = req.files.map((file, index) => ({
+        url: file.path, 
+        isMain: index === 0 
       }));
-      productData.images = imagesArray;
     }
 
-    // 2. Parse nested JSON fields
-    // When using multipart/form-data for file uploads, nested objects arrive as stringified JSON.
-    if (typeof req.body.technicalSpecs === 'string') productData.technicalSpecs = JSON.parse(req.body.technicalSpecs);
-    if (typeof req.body.inventory === 'string') productData.inventory = JSON.parse(req.body.inventory);
-    if (typeof req.body.shipping === 'string') productData.shipping = JSON.parse(req.body.shipping);
+    // Parse nested JSON strings safely
+    const parseIfString = (val) => (typeof val === 'string' ? JSON.parse(val) : val);
+    
+    if (req.body.technicalSpecs) productData.technicalSpecs = parseIfString(req.body.technicalSpecs);
+    if (req.body.inventory) productData.inventory = parseIfString(req.body.inventory);
+    if (req.body.shipping) productData.shipping = parseIfString(req.body.shipping);
 
     productData.status = req.body.status || 'DRAFT';
 
@@ -124,32 +135,29 @@ export const createProduct = async (req, res, next) => {
  */
 export const updateProduct = async (req, res, next) => {
   try {
-    // Admins can update any product, merchants only their own.
     const query = req.user.role === 'admin' 
       ? { _id: req.params.id } 
       : { _id: req.params.id, merchantId: req.user._id };
 
     let updateData = { ...req.body };
 
-    // Handle new Image Uploads if files are attached
-    if (req.files && req.files.length > 0) {
-      const imagesArray = req.files.map((file, index) => ({
+    if (req.files?.length > 0) {
+      updateData.images = req.files.map((file, index) => ({
         url: file.path,
         isMain: index === 0 
       }));
-      updateData.images = imagesArray; 
     }
 
-    // Parse nested JSON fields if they are sent as strings
-    if (typeof req.body.technicalSpecs === 'string') updateData.technicalSpecs = JSON.parse(req.body.technicalSpecs);
-    if (typeof req.body.inventory === 'string') updateData.inventory = JSON.parse(req.body.inventory);
-    if (typeof req.body.shipping === 'string') updateData.shipping = JSON.parse(req.body.shipping);
+    const parseIfString = (val) => (typeof val === 'string' ? JSON.parse(val) : val);
+    
+    if (req.body.technicalSpecs) updateData.technicalSpecs = parseIfString(req.body.technicalSpecs);
+    if (req.body.inventory) updateData.inventory = parseIfString(req.body.inventory);
+    if (req.body.shipping) updateData.shipping = parseIfString(req.body.shipping);
 
-    // Find and update in a single atomic database call
     const updatedProduct = await Product.findOneAndUpdate(
       query,
-      { $set: updateData }, // $set updates only the provided fields, leaving others intact
-      { new: true, runValidators: true } // Returns updated doc, enforces schema rules
+      { $set: updateData },
+      { new: true, runValidators: true }
     );
 
     if (!updatedProduct) {

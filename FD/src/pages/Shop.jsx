@@ -8,7 +8,7 @@ import { useGetProductsQuery } from "../features/api/productsApi";
 
 // --- COMPONENTS ---
 import FilterDrawer from "./storefront/FilterDrawer";
-import ProductGrid from "./storefront/ProductGrid";
+import ProductGrid from "./storefront/ProductGrid.jsx";
 import ShopToolbar from "../layout/ShopToolbar"; 
 
 export default function Shop() {
@@ -24,7 +24,7 @@ export default function Shop() {
 
   // 3. FETCH REAL DATA FROM YOUR BACKEND
   const { data, isLoading, isFetching, isError } = useGetProductsQuery({
-    search: searchQuery,
+    keyword: searchQuery,
     category: categoryQuery,
     minPrice,
     maxPrice,

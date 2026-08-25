@@ -17,12 +17,12 @@ import { logout, selectCurrentUser } from "../features/auth/authSlice";
 import { useLogoutMutation } from "../services/authApiSlice";
 
 const navItems = [
-  { name: "Dashboard", path: "/", icon: LayoutGrid, exact: true },
-  { name: "Inventory", path: "/inventory", icon: Package },
-  { name: "Orders", path: "/orders", icon: ShoppingCart },
-  { name: "Analytics", path: "/analytics", icon: BarChart2 },
-  { name: "Customers", path: "/customers", icon: Users },
-  { name: "Settings", path: "/settings", icon: Settings },
+  { name: "Dashboard", path: "/admin", icon: LayoutGrid, exact: true },
+  { name: "Inventory", path: "/admin/inventory", icon: Package },
+  { name: "Orders", path: "/admin/orders", icon: ShoppingCart },
+  { name: "Analytics", path: "/admin/analytics", icon: BarChart2 },
+  { name: "Customers", path: "/admin/customers", icon: Users },
+  { name: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
 export default function Sidebar({ mobileOpen, setMobileOpen }) {
@@ -99,9 +99,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
 
         {/* Bottom Section */}
         <div className="p-6 border-t border-gray-100 bg-white">
-          <button className="w-full bg-[#111827] text-white flex items-center justify-center py-3 rounded-md text-[13px] font-semibold hover:bg-gray-800 transition-colors mb-6 shadow-sm">
-            <Plus className="w-4 h-4 mr-2 stroke-[2.5]" /> Add New Product
-          </button>
+          <button 
+  onClick={() => navigate("/admin/add-product/basic")}
+  className="w-full bg-[#111827] text-white flex items-center justify-center py-3 rounded-md text-[13px] font-semibold hover:bg-gray-800 transition-colors mb-6 shadow-sm"
+>
+  <Plus className="w-4 h-4 mr-2 stroke-[2.5]" /> Add New Product
+</button>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center">

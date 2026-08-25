@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 
 // ✅ Corrected Path: Fetching ProductCard from the storefront subfolder
-import ProductCard from "./storefront/ProductCard";
+import ProductCard from "../components/storefront/ProductCard.jsx";
 
 export default function Wishlist() {
   // Pull the liked items directly from your Redux store

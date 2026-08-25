@@ -1,5 +1,27 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
-import { ChevronRight, UploadCloud, Package, Bell } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { ChevronRight, UploadCloud, Package, Bell, Image as ImageIcon, ChevronLeft } from "lucide-react";
+
+// RTK & Redux
+import { clearDraft } from "../../features/productDraft/productDraftSlice";
+// 🔥 IMPORTANT: Adjust this path to match exactly where your mutation is exported!
+import { useCreateProductMutation } from "../../features/api/productsApi"; 
+
+const logisticsSchema = yup.object().shape({
+  sku: yup.string().trim().required("SKU is required"),
+  stockQuantity: yup
+    .number()
+    .typeError("Must be a number")
+    .integer("Must be a whole number")
+    .min(0, "Cannot be negative")
+    .required("Stock is required"),
+  lowStockAlert: yup.number().min(0).default(5),
+});
 
 const pageTransition = {
   initial: { opacity: 0, y: 15 },
@@ -9,151 +31,223 @@ const pageTransition = {
 };
 
 export default function AddProductLogistics() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  // 1. Pull the data we saved from Step 1 and Step 2
+  const draftBasic = useSelector((state) => state.productDraft.basic);
+  const draftMedia = useSelector((state) => state.productDraft.media);
+
+  // 2. Local State for Image File & Toggle
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [displayStockCount, setDisplayStockCount] = useState(false);
+
+  // 3. RTK Query Hook
+  const [createProduct, { isLoading }] = useCreateProductMutation();
+
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(logisticsSchema),
+    defaultValues: {
+      sku: "",
+      stockQuantity: 0,
+      lowStockAlert: 5,
+    },
+  });
+
+  // Handle Image Selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // 4. The Final Submit
+  const onSubmit = async (data) => {
+    if (!imageFile) {
+      alert("Please upload a product image before publishing.");
+      return;
+    }
+
+    try {
+      // Package everything into FormData so backend Multer can read the image
+      const formData = new FormData();
+      
+      // From Step 1
+      formData.append("title", draftBasic.title);
+      formData.append("price", draftBasic.price);
+      formData.append("category", draftBasic.category);
+      
+      // From Step 2
+      if (draftMedia.editorialNarrative) {
+        formData.append("editorialNarrative", draftMedia.editorialNarrative);
+      }
+
+      // From Step 3 (Inventory must be stringified based on your backend controller)
+      const inventoryObj = {
+        sku: data.sku,
+        stockQuantity: Number(data.stockQuantity),
+        lowStockAlert: Number(data.lowStockAlert),
+        displayStockCount: displayStockCount,
+      };
+      formData.append("inventory", JSON.stringify(inventoryObj));
+
+      // The Image File (Matches backend upload.array('images') or single('image'))
+      formData.append("images", imageFile); 
+
+      // Fire to MongoDB!
+      await createProduct(formData).unwrap();
+      
+      alert("Product successfully published to the Architectural Collection!");
+      
+      // Clear the Redux draft and redirect
+      dispatch(clearDraft());
+      navigate("/admin/inventory");
+
+    } catch (error) {
+      console.error("Failed to create product:", error);
+      alert(error?.data?.message || "Failed to create product");
+    }
+  };
+
   return (
-    <motion.div {...pageTransition} key="add-logistics">
+    <motion.div {...pageTransition} key="add-logistics" className="max-w-5xl mx-auto py-12 px-6">
       <div className="text-sm text-slate-400 mb-2 font-medium flex items-center gap-2 uppercase tracking-wide text-[10px]">
-        PRODUCTS <ChevronRight size={12} /> NEW LISTING{" "}
-        <ChevronRight size={12} /> STEP 03
+        PRODUCTS <ChevronRight size={12} /> NEW LISTING <ChevronRight size={12} /> STEP 03
       </div>
 
-      <div className="flex justify-between items-start mb-10">
-        <div className="max-w-xl">
-          <h2 className="text-4xl font-bold text-slate-900 mb-3 tracking-tight">
-            Logistics & Fulfilment
-          </h2>
-          <p className="text-slate-500 text-sm leading-relaxed">
-            Finalize your product listing by configuring real-time stock
-            monitoring and precise shipping dimensions for the Digital Curator
-            network.
-          </p>
+      {/* Wrap everything in the Form */}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex justify-between items-start mb-10">
+          <div className="max-w-xl">
+            <h2 className="text-4xl font-bold text-slate-900 mb-3 tracking-tight">
+              Logistics & Fulfilment
+            </h2>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Finalize your product listing by configuring real-time stock monitoring and secure image uploads.
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <button 
+              type="button"
+              onClick={() => navigate("/admin/add-product/media")}
+              className="border border-slate-200 bg-white text-slate-700 font-semibold py-2 px-6 rounded-lg text-sm shadow-sm hover:bg-slate-50 flex items-center gap-2"
+            >
+              <ChevronLeft size={16} /> Back
+            </button>
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className={`bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-bold py-2 px-6 rounded-lg text-sm shadow-sm flex items-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isLoading ? "PUBLISHING..." : "Save & Publish"} <UploadCloud size={16} />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-4">
-          <button className="border border-slate-200 bg-white text-slate-700 font-semibold py-2 px-6 rounded-lg text-sm shadow-sm hover:bg-slate-50">
-            Save Draft
-          </button>
-          <button className="bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-bold py-2 px-6 rounded-lg text-sm shadow-sm flex items-center gap-2">
-            Save & Publish <UploadCloud size={16} />
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-8">
-        <div className="col-span-2 space-y-8">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                <Package size={20} />
+        <div className="grid grid-cols-3 gap-8">
+          <div className="col-span-2 space-y-8">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Inventory & Stock Management</h3>
+                  <p className="text-xs text-slate-500">Configure SKU tracking and stock safety nets.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900">
-                  Inventory & Stock Management
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Configure SKU tracking and stock safety nets.
-                </p>
+
+              <div className="mb-6">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  STOCK KEEPING UNIT (SKU)
+                </label>
+                <input
+                  {...register("sku")}
+                  type="text"
+                  placeholder="e.g. ARCH-CHAIR-001"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900 font-medium outline-none uppercase"
+                />
+                {errors.sku && <p className="text-red-500 text-xs mt-1">{errors.sku.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    STOCK QUANTITY
+                  </label>
+                  <div className="relative">
+                    <input
+                      {...register("stockQuantity")}
+                      type="number"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900 font-bold outline-none"
+                    />
+                    <span className="absolute right-4 top-3.5 text-slate-400 text-sm font-medium">Units</span>
+                  </div>
+                  {errors.stockQuantity && <p className="text-red-500 text-xs mt-1">{errors.stockQuantity.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    LOW STOCK ALERT
+                  </label>
+                  <div className="relative">
+                    <input
+                      {...register("lowStockAlert")}
+                      type="number"
+                      className="w-full border border-red-200 rounded-lg p-3 text-slate-900 font-bold outline-none bg-red-50/30"
+                    />
+                    <Bell size={16} className="absolute right-4 top-3.5 text-red-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Functional Toggle Switch */}
+              <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-between border border-slate-100">
+                <div>
+                  <div className="font-bold text-slate-900 text-sm">Display stock count to customers</div>
+                  <div className="text-xs text-slate-500 mt-0.5">Encourage urgency by showing remaining quantity.</div>
+                </div>
+                <div 
+                  onClick={() => setDisplayStockCount(!displayStockCount)}
+                  className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${displayStockCount ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                >
+                  <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${displayStockCount ? 'right-1' : 'left-1'}`}></div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="mb-6">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                STOCK KEEPING UNIT (SKU)
+          <div className="col-span-1 space-y-6">
+            {/* Image Upload Area replaces the static preview */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <ImageIcon size={14} /> PRODUCT IMAGE
+              </div>
+              
+              <label className="block bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl h-48 mb-4 relative overflow-hidden flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors">
+                <input type="file" onChange={handleImageChange} className="hidden" accept="image/*" />
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <UploadCloud size={32} className="text-slate-400 mb-2" />
+                    <span className="text-xs text-slate-500 font-medium">Click to upload image</span>
+                  </>
+                )}
               </label>
-              <input
-                type="text"
-                value="ARCH-MRCH-2024-001"
-                readOnly
-                className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-slate-600 font-medium outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6 mb-8">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  STOCK QUANTITY
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    defaultValue={0}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900 font-bold outline-none"
-                  />
-                  <span className="absolute right-4 top-3.5 text-slate-400 text-sm font-medium">
-                    Units
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  LOW STOCK ALERT
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    defaultValue={5}
-                    className="w-full border border-red-200 rounded-lg p-3 text-slate-900 font-bold outline-none bg-red-50/30"
-                  />
-                  <Bell
-                    size={16}
-                    className="absolute right-4 top-3.5 text-red-400"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-2">
-                  Notify me when stock falls below this level.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-between border border-slate-100">
-              <div>
-                <div className="font-bold text-slate-900 text-sm">
-                  Display stock count to customers
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  Encourage urgency by showing remaining quantity on the
-                  storefront.
-                </div>
-              </div>
-              <div className="w-12 h-6 bg-slate-900 rounded-full relative cursor-pointer">
-                <div className="w-4 h-4 bg-white rounded-full absolute right-1 top-1"></div>
-              </div>
+              
+              <h4 className="font-bold text-slate-900 line-clamp-1">
+                {draftBasic?.title || "Product Title Preview"}
+              </h4>
+              <p className="text-xs font-bold text-emerald-600 mt-1">
+                ₹{draftBasic?.price || "0.00"}
+              </p>
             </div>
           </div>
         </div>
-
-        <div className="col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">
-              LISTING PREVIEW
-            </div>
-            <div className="bg-slate-100 rounded-xl h-40 mb-4 relative overflow-hidden flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full bg-teal-800 shadow-xl"></div>
-              <span className="absolute top-3 left-3 bg-emerald-800 text-white text-[9px] font-bold px-2 py-1 rounded uppercase">
-                ACTIVE
-              </span>
-            </div>
-            <h4 className="font-bold text-slate-900">
-              Nordic Minimalist Lounge Chair
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              Handcrafted architectural furniture designed for modern executive
-              spaces...
-            </p>
-          </div>
-
-          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg text-white">
-            <div className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-4">
-              SHIPPING ESTIMATES
-            </div>
-            <div className="text-2xl font-bold mb-3 tracking-tight text-white">
-              $42.00 — $85.00
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Based on current weight and dimensions. These values will be used
-              to calculate live courier rates at checkout.
-            </p>
-          </div>
-        </div>
-      </div>
+      </form>
     </motion.div>
   );
 }

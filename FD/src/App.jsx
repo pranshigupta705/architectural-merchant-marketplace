@@ -22,7 +22,7 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 
 import InventoryList from "./features/inventory/InventoryList.jsx";
 import AddProductBasic from "./pages/Inventory/AddProductBasic";
-
+import AddProductMedia from "./pages/Inventory/AddProductMedia";
 import AddProductLogistics from "./pages/Inventory/AddProductLogistics";
 import OrdersList from "./features/orders/OrdersList";
 import Analytics from "./pages/Analytics";
@@ -58,6 +58,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="inventory" element={<InventoryList />} />
         <Route path="add-product/basic" element={<AddProductBasic />} />
+        <Route path="add-product/media" element={<AddProductMedia />} />
         <Route path="add-product/logistics" element={<AddProductLogistics />} />
         <Route path="orders" element={<OrdersList />} />
         <Route path="analytics" element={<Analytics />} />

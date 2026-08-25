@@ -1,29 +1,42 @@
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import dotenv from 'dotenv';
+import path from 'path';
 
-// 1. Configure Cloudinary with your credentials from .env
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env'),
+});
+
+console.log(
+  '☁️ CLOUDINARY KEY CHECK:',
+  process.env.CLOUDINARY_CLOUD_NAME ? '✅ FOUND' : '❌ MISSING'
+);
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 2. Set up the Storage Engine
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
-    folder: 'architectural_merchant/products', // Creates a folder in your Cloudinary dashboard
+    folder: 'architectural_merchant/products',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    // Automatically limit the dimensions to keep load times fast
-    transformation: [{ width: 1000, height: 1000, crop: 'limit' }], 
+    transformation: [
+      {
+        width: 1000,
+        height: 1000,
+        crop: 'limit',
+      },
+    ],
   },
 });
 
-// 3. Export the upload middleware
 export const uploadProductImages = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit per image
+    fileSize: 5 * 1024 * 1024,
   },
 });

@@ -10,22 +10,21 @@ export const customerApi = createApi({
         headers.set('authorization', `Bearer ${token}`);
       }
       return headers;
-    },sss
+    }, // <-- Fixed the "sss" typo here!
   }),
-  tagTypes: ['Product', 'Profile', 'Order'],
+  // Added 'Customer' to tagTypes
+  tagTypes: ['Product', 'Profile', 'Order', 'Customer'],
   
   endpoints: (builder) => ({
     
-    // 1. PUBLIC CATALOG ENDPOINT (FIXED)
+    // 1. PUBLIC CATALOG ENDPOINT
     getStorefrontProducts: builder.query({
       query: (params) => ({
         url: '/products',
         params, 
       }),
       providesTags: (result) => {
-        
         const productsArray = Array.isArray(result) ? result : result?.products || result?.data || [];
-        
         return [
           ...productsArray.map(({ _id }) => ({ type: 'Product', id: _id })),
           { type: 'Product', id: 'LIST' },
@@ -73,10 +72,17 @@ export const customerApi = createApi({
       }),
       invalidatesTags: [{ type: 'Order', id: 'LIST' }],
     }),
+
+    // 4. ADMIN ENDPOINT (Restored!)
+    getCustomers: builder.query({ 
+      query: () => '/customers',
+      providesTags: ['Customer'],
+    }),
     
   }),
 });
 
+// Restored useGetCustomersQuery to the exports!
 export const {
   useGetStorefrontProductsQuery,
   useGetStorefrontProductByIdQuery,
@@ -84,4 +90,5 @@ export const {
   useUpdateCustomerProfileMutation,
   useGetCustomerOrdersQuery,
   useCreateOrderMutation,
+  useGetCustomersQuery, 
 } = customerApi;

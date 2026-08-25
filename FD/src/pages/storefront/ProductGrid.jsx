@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import ProductCard from "./ProductCard";
+import ProductCard from "../../components/storefront/ProductCard.jsx";
 
 export default function ProductGrid({ products, isLoading, onClearFilters }) {
   // --- Framer Motion Variants ---
