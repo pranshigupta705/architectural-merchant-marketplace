@@ -9,8 +9,8 @@ import { ChevronRight, UploadCloud, Package, Bell, Image as ImageIcon, ChevronLe
 
 // RTK & Redux
 import { clearDraft } from "../../features/productDraft/productDraftSlice";
-// 🔥 IMPORTANT: Adjust this path to match exactly where your mutation is exported!
-import { useCreateProductMutation } from "../../features/api/productsApi"; 
+
+import { useCreateProductMutation } from "../../services/productsApiSlice";
 
 const logisticsSchema = yup.object().shape({
   sku: yup.string().trim().required("SKU is required"),
@@ -64,28 +64,35 @@ export default function AddProductLogistics() {
     }
   };
 
-  // 4. The Final Submit
+  
   const onSubmit = async (data) => {
+    // Check if Redux state was lost due to a page refresh
+    if (!draftBasic || !draftBasic.title) {
+      alert("Basic product details are missing! Redirecting to Step 1.");
+      navigate("/admin/add-product/basic");
+      return;
+    }
+
     if (!imageFile) {
       alert("Please upload a product image before publishing.");
       return;
     }
 
     try {
-      // Package everything into FormData so backend Multer can read the image
       const formData = new FormData();
       
-      // From Step 1
+      // 1. Append all basic and status data
       formData.append("title", draftBasic.title);
       formData.append("price", draftBasic.price);
       formData.append("category", draftBasic.category);
+      formData.append("status", "ACTIVE");
       
-      // From Step 2
-      if (draftMedia.editorialNarrative) {
+      // 2. Append optional media data
+      if (draftMedia?.editorialNarrative) {
         formData.append("editorialNarrative", draftMedia.editorialNarrative);
       }
 
-      // From Step 3 (Inventory must be stringified based on your backend controller)
+      // 3. Append inventory and images
       const inventoryObj = {
         sku: data.sku,
         stockQuantity: Number(data.stockQuantity),
@@ -93,16 +100,12 @@ export default function AddProductLogistics() {
         displayStockCount: displayStockCount,
       };
       formData.append("inventory", JSON.stringify(inventoryObj));
-
-      // The Image File (Matches backend upload.array('images') or single('image'))
       formData.append("images", imageFile); 
 
-      // Fire to MongoDB!
+      // 4. FIRE TO MONGODB (Only once, at the very end!)
       await createProduct(formData).unwrap();
       
-      alert("Product successfully published to the Architectural Collection!");
-      
-      // Clear the Redux draft and redirect
+      alert("Product successfully published!");
       dispatch(clearDraft());
       navigate("/admin/inventory");
 
@@ -220,7 +223,7 @@ export default function AddProductLogistics() {
           </div>
 
           <div className="col-span-1 space-y-6">
-            {/* Image Upload Area replaces the static preview */}
+            {/* Image Upload Area */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <ImageIcon size={14} /> PRODUCT IMAGE

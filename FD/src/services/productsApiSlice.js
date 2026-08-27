@@ -1,5 +1,4 @@
-// src/services/productsApiSlice.js
-import { apiSlice } from './apiSlice';
+import { apiSlice } from '../features/api/apiSlice';
 
 export const productsApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -7,9 +6,10 @@ export const productsApiSlice = apiSlice.injectEndpoints({
     // --- PRODUCT MANAGEMENT ---
     getProducts: builder.query({
       query: (params) => ({ url: '/products', params }),
+      // 🔥 PERFECTLY ALIGNED WITH BACKEND: Looks at result.data array
       providesTags: (result) => 
-        result?.products 
-          ? [...result.products.map(({ _id }) => ({ type: 'Product', id: _id })), { type: 'Product', id: 'LIST' }]
+        result?.data 
+          ? [...result.data.map(({ _id }) => ({ type: 'Product', id: _id })), { type: 'Product', id: 'LIST' }]
           : [{ type: 'Product', id: 'LIST' }],
     }),
 
@@ -19,23 +19,31 @@ export const productsApiSlice = apiSlice.injectEndpoints({
     }),
 
     // --- IMAGE UPLOADS ---
-    // Added this critical mutation to talk to your Multer backend
     uploadProductImage: builder.mutation({
       query: (data) => ({
-        url: '/upload', // apiSlice already prefixes with /api
+        url: '/upload', 
         method: 'POST',
-        body: data,     // We will pass the raw FormData object here directly from the React component
+        body: data, 
       }),
     }),
 
     // --- MUTATIONS (CREATE, UPDATE, DELETE) ---
     createProduct: builder.mutation({
-      query: (productData) => ({ url: '/products', method: 'POST', body: productData }),
+      query: (productData) => ({ 
+        url: '/products', 
+        method: 'POST', 
+        body: productData 
+      }),
+      // 🔥 Forces the Inventory table to instantly refresh after saving!
       invalidatesTags: [{ type: 'Product', id: 'LIST' }, 'Analytics'],
     }),
 
     updateProduct: builder.mutation({
-      query: ({ id, ...data }) => ({ url: `/products/${id}`, method: 'PUT', body: data }),
+      query: ({ id, ...data }) => ({ 
+        url: `/products/${id}`, 
+        method: 'PUT', 
+        body: data 
+      }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Product', id }, 
         { type: 'Product', id: 'LIST' },
@@ -44,7 +52,10 @@ export const productsApiSlice = apiSlice.injectEndpoints({
     }),
 
     deleteProduct: builder.mutation({
-      query: (id) => ({ url: `/products/${id}`, method: 'DELETE' }),
+      query: (id) => ({ 
+        url: `/products/${id}`, 
+        method: 'DELETE' 
+      }),
       invalidatesTags: [{ type: 'Product', id: 'LIST' }, 'Analytics'],
     }),
 

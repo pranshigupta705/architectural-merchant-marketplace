@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { addItemToCart } from "../features/cart/cartSlice";
 import { toggleWishlist } from "../features/wishlist/wishlistSlice";
 
-import { useGetProductByIdQuery } from "../features/api/productsApi";
+import { useGetProductByIdQuery } from "../services/productsApiSlice";
 
 export default function ProductDetails() {
   const { id } = useParams();
