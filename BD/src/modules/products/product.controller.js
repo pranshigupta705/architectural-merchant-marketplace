@@ -1,5 +1,19 @@
 import Product from './product.model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { uploadBufferToCloudinary } from '../../middleware/upload.middleware.js';
+
+// Helper function to safely parse FormData JSON strings from the frontend
+const parseIfString = (val) => {
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val);
+    } catch (error) {
+      console.warn("⚠️ Warning: Failed to parse JSON string from frontend:", val);
+      return val;
+    }
+  }
+  return val;
+};
 
 /**
  * @desc    Fetch all products (with Search, Pagination, and Filters)
@@ -7,13 +21,8 @@ import { ApiError } from '../../utils/ApiError.js';
  * @access  Public
  */
 export const getProducts = async (req, res, next) => {
-
-  
   try {
     // 1. Safely parse pagination parameters
-    console.log("🚦 TRACE 1: Entered createProduct controller!");
-    console.log("🖼️ Files received:", req.files ? req.files.length : 0);
-    console.log("📦 Body received:", req.body.title);
     const pageSize = Math.max(1, parseInt(req.query.limit, 10) || 10);
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     
@@ -98,19 +107,32 @@ export const getProductById = async (req, res, next) => {
  */
 export const createProduct = async (req, res, next) => {
   try {
+    console.log("🚦 TRACE 1: Entered createProduct controller!");
+    console.log("🖼️ Files received in memory:", req.files ? req.files.length : 0);
+    console.log("📦 Body received title:", req.body.title);
+
     let productData = { ...req.body, merchantId: req.user._id };
 
-    // Handle Image Uploads from Multer
-    if (req.files?.length > 0) {
-      productData.images = req.files.map((file, index) => ({
-        url: file.path, 
+    // 🔥 PRODUCTION UPGRADE: Upload Memory Buffers to Cloudinary
+    if (req.files && req.files.length > 0) {
+      console.log("☁️ Uploading images to Cloudinary...");
+      
+      const uploadPromises = req.files.map((file) =>
+        uploadBufferToCloudinary(file.buffer)
+      );
+      
+      // Wait for all images to upload concurrently
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      productData.images = uploadResults.map((result, index) => ({
+        url: result.secure_url, 
         isMain: index === 0 
       }));
+      
+      console.log("✅ Cloudinary upload successful!");
     }
 
-    // Parse nested JSON strings safely
-    const parseIfString = (val) => (typeof val === 'string' ? JSON.parse(val) : val);
-    
+    // Safely parse nested JSON strings sent via FormData
     if (req.body.technicalSpecs) productData.technicalSpecs = parseIfString(req.body.technicalSpecs);
     if (req.body.inventory) productData.inventory = parseIfString(req.body.inventory);
     if (req.body.shipping) productData.shipping = parseIfString(req.body.shipping);
@@ -121,8 +143,9 @@ export const createProduct = async (req, res, next) => {
 
     res.status(201).json({ success: true, data: product });
   } catch (error) {
+    console.error("❌ Error in createProduct:", error);
     if (error.code === 11000) {
-      return next(new ApiError(400, 'A product with this SKU already exists.'));
+      return next(new ApiError(400, 'A product with this SKU already exists. Please use a unique SKU.'));
     }
     next(new ApiError(500, 'Error creating product', error.message));
   }
@@ -141,15 +164,23 @@ export const updateProduct = async (req, res, next) => {
 
     let updateData = { ...req.body };
 
-    if (req.files?.length > 0) {
-      updateData.images = req.files.map((file, index) => ({
-        url: file.path,
+    // 🔥 PRODUCTION UPGRADE: Handle new image uploads during update
+    if (req.files && req.files.length > 0) {
+      console.log("☁️ Uploading new images to Cloudinary...");
+      
+      const uploadPromises = req.files.map((file) =>
+        uploadBufferToCloudinary(file.buffer)
+      );
+      
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      updateData.images = uploadResults.map((result, index) => ({
+        url: result.secure_url,
         isMain: index === 0 
       }));
     }
 
-    const parseIfString = (val) => (typeof val === 'string' ? JSON.parse(val) : val);
-    
+    // Safely parse nested JSON strings sent via FormData
     if (req.body.technicalSpecs) updateData.technicalSpecs = parseIfString(req.body.technicalSpecs);
     if (req.body.inventory) updateData.inventory = parseIfString(req.body.inventory);
     if (req.body.shipping) updateData.shipping = parseIfString(req.body.shipping);
@@ -166,6 +197,7 @@ export const updateProduct = async (req, res, next) => {
 
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
+    console.error("❌ Error in updateProduct:", error);
     if (error.code === 11000) {
       return next(new ApiError(400, 'A product with this SKU already exists.'));
     }
