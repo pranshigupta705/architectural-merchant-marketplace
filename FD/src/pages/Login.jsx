@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setCustomerCredentials } from "../store/customerAuthSlice";
+import { setCustomerCredentials } from "../components/storefront/store/customerAuthSlice";
 // TODO: When ready, import your customer login mutation here
 // import { useCustomerLoginMutation } from '../api/customerApi';
 

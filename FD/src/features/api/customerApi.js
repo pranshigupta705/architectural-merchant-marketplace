@@ -3,42 +3,64 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const customerApi = createApi({
   reducerPath: 'customerApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api', 
+    
+    baseUrl: '/api/v1', 
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().customerAuth?.token;
+      
+      const token = 
+        getState().customerAuth?.token || 
+        getState().auth?.token || 
+        localStorage.getItem('accessToken') || 
+        localStorage.getItem('token');
+
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
       return headers;
-    }, // <-- Fixed the "sss" typo here!
+    },
   }),
-  // Added 'Customer' to tagTypes
   tagTypes: ['Product', 'Profile', 'Order', 'Customer'],
-  
+
   endpoints: (builder) => ({
     
-    // 1. PUBLIC CATALOG ENDPOINT
+    // --- PUBLIC CATALOG ENDPOINTS ---
     getStorefrontProducts: builder.query({
       query: (params) => ({
         url: '/products',
-        params, 
+        params,
       }),
       providesTags: (result) => {
         const productsArray = Array.isArray(result) ? result : result?.products || result?.data || [];
         return [
-          ...productsArray.map(({ _id }) => ({ type: 'Product', id: _id })),
+          ...productsArray.map(({ _id, id }) => ({ type: 'Product', id: _id || id })),
           { type: 'Product', id: 'LIST' },
         ];
       },
     }),
 
-    // 2. FETCH SINGLE PRODUCT
     getStorefrontProductById: builder.query({
       query: (id) => `/products/${id}`,
       providesTags: (result, error, id) => [{ type: 'Product', id }],
     }),
 
-    // 3. PRIVATE CUSTOMER ENDPOINTS
+    getProductReviews: builder.query({
+      query: (productId) => `/reviews/${productId}`,
+      providesTags: (result, error, productId) => [{ type: 'Product', id: productId }],
+    }),
+
+    createProductReview: builder.mutation({
+      query: (data) => ({
+        url: `/reviews/${data.productId}`,
+        method: 'POST',
+        body: { rating: data.rating, comment: data.comment },
+      }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: 'Product', id: productId },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
+
+    // --- PRIVATE CUSTOMER ENDPOINTS ---
     getCustomerProfile: builder.query({
       query: () => '/customers/profile',
       providesTags: ['Profile'],
@@ -50,7 +72,7 @@ export const customerApi = createApi({
         method: 'PUT',
         body: profileData,
       }),
-      invalidatesTags: ['Profile'], 
+      invalidatesTags: ['Profile'],
     }),
 
     getCustomerOrders: builder.query({
@@ -58,7 +80,7 @@ export const customerApi = createApi({
       providesTags: (result) => {
         const ordersArray = Array.isArray(result) ? result : result?.orders || result?.data || [];
         return [
-          ...ordersArray.map(({ _id }) => ({ type: 'Order', id: _id })),
+          ...ordersArray.map(({ _id, id }) => ({ type: 'Order', id: _id || id })),
           { type: 'Order', id: 'LIST' },
         ];
       },
@@ -73,22 +95,23 @@ export const customerApi = createApi({
       invalidatesTags: [{ type: 'Order', id: 'LIST' }],
     }),
 
-    // 4. ADMIN ENDPOINT (Restored!)
-    getCustomers: builder.query({ 
-      query: () => '/customers',
+    // --- ADMIN CUSTOMER DIRECTORY ENDPOINT ---
+    getCustomers: builder.query({
+      query: () => '/customers', // Resolves to /api/v1/customers
       providesTags: ['Customer'],
     }),
-    
+
   }),
 });
 
-// Restored useGetCustomersQuery to the exports!
 export const {
   useGetStorefrontProductsQuery,
   useGetStorefrontProductByIdQuery,
+  useGetProductReviewsQuery,
+  useCreateProductReviewMutation,
   useGetCustomerProfileQuery,
   useUpdateCustomerProfileMutation,
   useGetCustomerOrdersQuery,
   useCreateOrderMutation,
-  useGetCustomersQuery, 
+  useGetCustomersQuery,
 } = customerApi;

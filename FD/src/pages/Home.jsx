@@ -7,22 +7,38 @@ import {
   Truck,
   PackageCheck,
   Quote,
+  Loader2,
 } from "lucide-react";
 
-// ✅ 1. REDUX IMPORTS
 import { useDispatch } from "react-redux";
 import { addItemToCart } from "../features/cart/cartSlice";
+import { Skeleton } from "../components/ui/Skeleton";
+
+const SkeletonCard = () => (
+  <div className="animate-pulse">
+    <div className="aspect-[4/5] bg-gray-200 rounded-md mb-4"></div>
+    <div className="space-y-2">
+      <div className="h-3 bg-gray-200 rounded w-16"></div>
+      <div className="h-4 bg-gray-200 rounded w-32"></div>
+      <div className="h-4 bg-gray-200 rounded w-20"></div>
+    </div>
+  </div>
+);
+
+const SkeletonSection = ({ height = 'h-8', width = 'w-48' }) => (
+  <div className="animate-pulse space-y-4">
+    <div className={`${height} bg-gray-200 rounded ${width}`}></div>
+    <div className={`${height} bg-gray-200 rounded ${width}`}></div>
+  </div>
+);
 
 export default function Home() {
-  // ✅ 2. INITIALIZE DISPATCH
   const dispatch = useDispatch();
 
-  // ✅ 3. THE BULLETPROOF QUICK ADD FUNCTION WITH ERROR LOGGING
   const handleProductAddToCart = (product) => {
     console.log("🔘 Quick Add Clicked for:", product.name);
 
     try {
-      // Safely handle the price whether it's a string ("$125") or already a number (125)
       const numericPrice =
         typeof product.price === "string"
           ? parseFloat(product.price.replace("$", ""))
@@ -30,7 +46,7 @@ export default function Home() {
 
       dispatch(
         addItemToCart({
-          id: product.id || product._id, // Fallback safety match
+          id: product.id || product._id,
           name: product.name,
           price: numericPrice,
           quantity: 1,
@@ -43,7 +59,6 @@ export default function Home() {
     }
   };
 
-  // --- Framer Motion Animation Variants ---
   const staggerContainer = {
     hidden: { opacity: 0 },
     show: {
@@ -70,7 +85,6 @@ export default function Home() {
     },
   };
 
-  // --- Mock Data ---
   const categories = [
     {
       id: 1,
@@ -309,7 +323,6 @@ export default function Home() {
                   className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
                 />
 
-                {/* ✅ MULTI-LAYER RESOLUTION OVERLAY PATCH */}
                 <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex justify-center z-50 pointer-events-none">
                   <button
                     onClick={(e) => {
@@ -444,7 +457,9 @@ export default function Home() {
       {/* 7. PRE-FOOTER NEWSLETTER CTA */}
       <section className="relative py-32 px-6 overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0 bg-charcoal">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541123356219-284ebe98ae3b?auto=format&fit=crop&q=80&w=2000')] opacity-10 bg-cover bg-center mix-blend-overlay" />
+          <div
+            className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541123356219-284ebe98ae3b?auto=format&fit=crop&q=80&w=2000')] opacity-10 bg-cover bg-center mix-blend-overlay"
+          />
         </div>
         <motion.div
           initial={{ opacity: 0, y: 30 }}

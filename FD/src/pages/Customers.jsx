@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 import { useGetCustomersQuery } from "../features/api/customerApi.js?t=1";
@@ -95,11 +96,34 @@ export default function Customers() {
   // HANDLE LOADING STATE GRACEFULLY
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-100">
-        <Loader2 className="w-8 h-8 text-[#0E4D34] animate-spin mb-4" />
-        <p className="text-gray-500 font-medium">
-          Loading curator portfolio...
-        </p>
+      <div className="space-y-8 pb-12">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+          <div className="max-w-xl">
+            <div className="h-8 bg-gray-200 rounded w-64 mb-3 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-4"></div>
+              <div className="h-8 bg-gray-200 rounded w-32"></div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 animate-pulse">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-48"></div>
+                  <div className="h-3 bg-gray-200 rounded w-64"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -107,8 +131,16 @@ export default function Customers() {
   // HANDLE ERROR STATE
   if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-100 text-red-500 font-bold">
-        Failed to load customer data. Please try again.
+      <div className="flex flex-col items-center justify-center min-h-96 text-red-500">
+        <AlertCircle className="w-8 h-8 mb-3" />
+        <p className="font-bold mb-2">Failed to load customer data</p>
+        <p className="text-sm text-gray-500 mb-4">Please try again later.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-[#111827] text-white text-sm font-bold rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }

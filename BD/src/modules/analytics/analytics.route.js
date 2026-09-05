@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAnalyticsStats, getRecentTransactions } from './analytics.controller.js';
+import { getAnalyticsStats, getRecentTransactions, getAnalyticsSummary } from './analytics.controller.js';
 import { protect, authorizeRoles } from '../auth/auth.middleware.js';
 
 const router = express.Router();
@@ -20,5 +20,8 @@ router.route('/stats')
 
 router.route('/recent-transactions')
   .get(getRecentTransactions);
+
+router.route('/summary')
+  .get(getAnalyticsSummary);
 
 export default router;

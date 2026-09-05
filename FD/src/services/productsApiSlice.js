@@ -67,6 +67,11 @@ export const productsApiSlice = apiSlice.injectEndpoints({
       providesTags: ['Product', 'Analytics'],
     }),
 
+    getAnalyticsSummary: builder.query({
+      query: () => '/analytics/summary',
+      providesTags: ['Product', 'Analytics'],
+    }),
+
     getRecentTransactions: builder.query({
       query: () => '/analytics/recent-transactions',
       providesTags: ['Product'],
@@ -84,5 +89,6 @@ export const {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useGetAnalyticsQuery,
+  useGetAnalyticsSummaryQuery,
   useGetRecentTransactionsQuery,
 } = productsApiSlice;

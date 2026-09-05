@@ -19,6 +19,8 @@ import {
   uploadProductImages
 } from '../../middleware/upload.middleware.js';
 
+import { validateRequest, createProductSchema } from '../../middleware/validation.middleware.js';
+
 const router = express.Router();
 
 // ==========================================
@@ -40,6 +42,9 @@ router.route('/')
 
     // 2. File Upload
     uploadProductImages.array('images', 5),
+
+    // 3. Validate product data from FormData
+    validateRequest(createProductSchema),
 
     // 🚦 TRAP 2: Multer/Cloudinary check
     (req, res, next) => {

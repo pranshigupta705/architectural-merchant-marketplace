@@ -3,8 +3,8 @@ import cors from 'cors';
 import path from 'path'; 
 
 import helmet from 'helmet';
-// import mongoSanitize from 'express-mongo-sanitize'; // ❌ TEMP DISABLED
-// import hpp from 'hpp'; // ❌ TEMP DISABLED
+import mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 
@@ -15,6 +15,8 @@ import orderRoutes from './modules/orders/order.route.js';
 import analyticsRoutes from './modules/analytics/analytics.route.js';
 import uploadRoutes from './modules/upload/upload.route.js';
 import customerRoutes from './modules/customers/customer.route.js'; 
+import paymentRoutes from './modules/payments/payment.routes.js';
+import reviewRoutes from './modules/reviews/review.route.js';
 
 import { errorHandler } from './middleware/error.middleware.js';
 import { ApiError } from './utils/ApiError.js';
@@ -49,9 +51,8 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
-// 🔥 The causes of the hang are commented out below!
-// app.use(mongoSanitize());
-// app.use(hpp());
+app.use(mongoSanitize());
+app.use(hpp());
 
 const __dirname = path.resolve(); 
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
@@ -66,6 +67,8 @@ app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/customers', customerRoutes);
+app.use('/api/v1/payments', paymentRoutes); 
+app.use('/api/v1/reviews', reviewRoutes);
 
 app.use((req, res, next) => {
   next(new ApiError(404, `Can't find ${req.originalUrl} on this server!`));

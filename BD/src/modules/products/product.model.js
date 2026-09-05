@@ -108,5 +108,11 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+productSchema.index({
+  title: 'text',
+  category: 'text',
+  'inventory.sku': 'text',
+});
+
 const Product = mongoose.model('Product', productSchema);
 export default Product;

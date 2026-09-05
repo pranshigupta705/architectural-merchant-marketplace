@@ -215,10 +215,19 @@ export default function CustomerLogin() {
             animate={{ opacity: 1, y: 0 }}
             className="p-3 mt-6 text-sm text-center text-red-600 bg-red-50 rounded-lg border border-red-100"
           >
-            {/* Added fallback error reading incase standard message structure isn't found */}
-            {currentError.data?.message ||
-              currentError.error ||
-              `${isLogin ? "Login" : "Registration"} failed. Please try again.`}
+            {(() => {
+              const apiError = currentError?.error || currentError;
+              const message =
+                apiError?.data?.message ||
+                apiError?.message ||
+                (currentError?.status === 'FETCH_ERROR'
+                  ? 'Cannot reach the server. Please ensure the backend is running.'
+                  : currentError?.status === 'TIMEOUT'
+                    ? 'Request timed out. Please try again.'
+                    : `${isLogin ? 'Login' : 'Registration'} failed. Please try again.`);
+
+              return message;
+            })()}
           </motion.div>
         )}
       </motion.div>

@@ -30,10 +30,7 @@ export const getProducts = async (req, res, next) => {
     const queryObj = {};
 
     if (req.query.keyword && req.query.keyword.trim() !== '') {
-      queryObj.$or = [
-        { title: { $regex: req.query.keyword.trim(), $options: 'i' } },
-        { 'inventory.sku': { $regex: req.query.keyword.trim(), $options: 'i' } }
-      ];
+      queryObj.$text = { $search: req.query.keyword.trim() };
     }
 
     if (req.query.category && req.query.category.trim() !== '') {
@@ -55,14 +52,30 @@ export const getProducts = async (req, res, next) => {
     }
 
     // 4. Execute Highly Optimized Queries Concurrently
+    const hasKeyword = req.query.keyword && req.query.keyword.trim() !== '';
+    const sortOption = hasKeyword
+      ? { score: { $meta: 'textScore' } }
+      : { createdAt: -1 };
+
+    const findOptions = {
+      populate: { path: 'merchantId', select: 'name email' },
+      limit: pageSize,
+      skip: pageSize * (page - 1),
+      sort: sortOption,
+    };
+
+    if (hasKeyword) {
+      findOptions.projection = { score: { $meta: 'textScore' } };
+    }
+
     const [count, products] = await Promise.all([
       Product.countDocuments(queryObj),
-      Product.find(queryObj)
-        .populate('merchantId', 'name email')
-        .limit(pageSize)
-        .skip(pageSize * (page - 1))
-        .sort({ createdAt: -1 })
-        .lean() // Strips Mongoose overhead for faster reads
+      Product.find(queryObj, findOptions.projection)
+        .populate(findOptions.populate)
+        .limit(findOptions.limit)
+        .skip(findOptions.skip)
+        .sort(findOptions.sort)
+        .lean()
     ]);
 
     return res.status(200).json({
@@ -86,14 +99,18 @@ export const getProducts = async (req, res, next) => {
  */
 export const getProductById = async (req, res, next) => {
   try {
+    console.log(`🚦 ROUTE TRACER: [GET] /api/v1/products/${req.params.id}`);
+    
     const product = await Product.findById(req.params.id)
       .populate('merchantId', 'name email')
       .lean();
 
     if (!product) {
+      console.log(`❌ Product not found: ${req.params.id}`);
       return next(new ApiError(404, 'Product not found'));
     }
 
+    console.log(`✅ Product found: ${product.title}`);
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     next(new ApiError(500, 'Error fetching product', error.message));

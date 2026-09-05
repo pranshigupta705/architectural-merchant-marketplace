@@ -6,14 +6,13 @@ import {
   registerUser, 
   loginUser, 
   refreshToken, 
-  logoutUser // <-- 1. Import the new logout controller
+  logoutUser
 } from './auth.controller.js';
+import { validateRequest, registerSchema, loginSchema } from '../../middleware/validation.middleware.js';
 
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+router.post('/register', validateRequest(registerSchema), registerUser);
+router.post('/login', validateRequest(loginSchema), loginUser);
 router.post('/refresh', refreshToken);
-
-// 2. Add the logout POST route
-router.post('/logout', logoutUser); 
+router.post('/logout', logoutUser);
 
 export default router;

@@ -8,22 +8,19 @@ import jwt from 'jsonwebtoken';
  * @returns {Object} { accessToken, refreshToken }
  */
 const generateTokens = (userId, role) => {
-  // DEVELOPMENT MODE: Set to 30 days so your session doesn't expire while testing.
-  // IMPORTANT: Before deploying to real users, change this back to '15m' or '1h'.
   const accessToken = jwt.sign(
-    { id: userId, role }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: '30d' } 
+    { id: userId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }
   );
 
   const refreshToken = jwt.sign(
-    { id: userId }, 
-    process.env.JWT_SECRET, 
-    { expiresIn: '30d' }
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
   );
 
   return { accessToken, refreshToken };
 };
 
-// Use ES Module export
 export default generateTokens;

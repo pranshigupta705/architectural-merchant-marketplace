@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 
@@ -6,14 +6,11 @@ import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 import StorefrontNavbar from "./StorefrontNavbar";
 import StorefrontFooter from "./StorefrontFooter";
 
-import CartDrawer from "../components/storefront/CartDrawer";
+import CartDrawer from "../components/storefront/shared/CartDrawer";
 
 export default function StorefrontLayout() {
   const { pathname } = useLocation();
   const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // State for mobile menu
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Framer Motion scroll progress indicator logic
   const { scrollYProgress } = useScroll();
@@ -23,11 +20,12 @@ export default function StorefrontLayout() {
     restDelta: 0.001,
   });
 
-  // Scroll to top on route change & close menus
-  useEffect(() => {
+  // Scroll to top synchronously during render when pathname changes.
+  // Reading pathname here subscribes the component to route changes,
+  // so this runs once per navigation without an effect.
+  if (typeof window !== "undefined") {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-ivory relative">
@@ -44,9 +42,8 @@ export default function StorefrontLayout() {
 
       {/* --- NEW LUXURY HEADER --- */}
       <StorefrontNavbar
-        isMobileMenuOpen={isMobileMenuOpen}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenMenu={() => setIsMobileMenuOpen(true)}
+        onOpenMenu={() => {}}
       />
 
       {/* --- DYNAMIC MAIN CONTENT WITH PAGE TRANSITIONS --- 

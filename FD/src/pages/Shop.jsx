@@ -1,22 +1,22 @@
 import { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react';
-import { useGetProductsQuery } from '../services/productsApiSlice';
+
+import { useGetStorefrontProductsQuery } from "../features/api/customerApi";
+import { CardSkeleton } from "../components/ui/Skeleton";
 
 export default function Shop() {
-  // Local state for basic search filtering
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryFilter = searchParams.get('category');
 
-  // Fetch real products from your MongoDB database!
-  const { data: response, isLoading, isError } = useGetProductsQuery();
+  const { data: response, isLoading, isError } = useGetStorefrontProductsQuery({
+    keyword: searchTerm || undefined,
+    category: categoryFilter || undefined,
+    status: 'ACTIVE',
+  });
   
-  // Extract the data array
   const products = response?.data || [];
-
-  // Frontend search filter
-  const filteredProducts = products.filter(product => 
-    product.status === 'ACTIVE' && // Only show active products to customers!
-    product.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-24">
@@ -42,7 +42,7 @@ export default function Shop() {
                 className="w-full pl-10 pr-4 py-2.5 bg-[#F3F4F6] border-transparent rounded-md text-[13px] focus:bg-white focus:border-[#111827] focus:ring-1 focus:ring-[#111827] transition-all outline-none"
               />
             </div>
-            <button className="flex items-center px-4 py-2.5 bg-white border border-gray-200 text-[#111827] text-[13px] font-bold rounded-md hover:bg-gray-50 transition-colors">
+            <button className="flex items-center px-4 py-2.5 bg-white border border-gray-200 text-[#111827] text-[13px] font-bold rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
               <SlidersHorizontal className="w-4 h-4 mr-2" /> Filters
             </button>
           </div>
@@ -54,9 +54,10 @@ export default function Shop() {
         
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-[#111827] mb-4" />
-            <p className="text-gray-500 text-[13px] font-medium tracking-wider uppercase">Loading Collection...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            {[...Array(6)].map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
           </div>
         )}
 
@@ -72,20 +73,30 @@ export default function Shop() {
         {/* Product Grid */}
         {!isLoading && !isError && (
           <>
-            {filteredProducts.length === 0 ? (
+            {products.length === 0 ? (
               <div className="text-center py-24 text-gray-500">
-                <p className="text-lg font-serif">No pieces found.</p>
+                <p className="text-lg font-serif">No pieces found in this category.</p>
                 <p className="text-[13px]">Try adjusting your search criteria.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-                {filteredProducts.map((product) => (
-                  <div key={product._id} className="group cursor-pointer">
+                {products.map((product) => (
+                  <Link 
+                    // Make sure this path ("product" vs "shop") matches your route in App.jsx exactly!
+                   to={`/architecture/${product._id || product.id}`}
+                    key={product._id || product.id} 
+                    className="group block cursor-pointer"
+                  >
                     {/* Image Container */}
                     <div className="relative aspect-[4/5] mb-4 overflow-hidden rounded-sm bg-gray-200">
                       <img 
-                        src={product.images?.[0]?.url || ''} 
-                        alt={product.title}
+                        src={
+                          product.image || 
+                          product.images?.[0]?.url || 
+                          product.images?.[0] || 
+                          ''
+                        } 
+                        alt={product.title || product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
@@ -103,14 +114,16 @@ export default function Shop() {
                     {/* Product Info */}
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-bold text-[#111827] text-[15px] mb-1">{product.title}</h3>
+                        <h3 className="font-bold text-[#111827] text-[15px] mb-1">
+                          {product.title || product.name}
+                        </h3>
                         <p className="text-gray-500 text-[12px] uppercase tracking-wider">{product.category}</p>
                       </div>
                       <div className="font-sans font-bold text-[#111827] text-[15px]">
                         ${(product.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
-                  </div>
+                  </Link> 
                 ))}
               </div>
             )}

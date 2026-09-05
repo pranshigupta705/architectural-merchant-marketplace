@@ -6,31 +6,33 @@ import { ApiError } from '../../utils/ApiError.js';
 
 /**
  * @desc    Register a new user
- * @route   POST /api/auth/register
+ * @route   POST /api/v1/auth/register
  * @access  Public
  */
 export const registerUser = async (req, res, next) => {
-  console.log("HEADERS:", req.headers);
-  console.log("BODY:", req.body);
-
   try {
     const { name, email, password, role } = req.body;
-    // 2. Check if user already exists
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return next(new ApiError(400, 'User already exists with this email.'));
     }
 
-    // 3. Create User
     const user = await User.create({
       name,
       email,
-      password, 
+      password,
       role: role || 'customer',
     });
 
-    // 4. Generate Tokens
     const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(201).json({
       success: true,
@@ -42,24 +44,16 @@ export const registerUser = async (req, res, next) => {
         role: user.role,
       },
       accessToken,
-      refreshToken,
     });
   } catch (error) {
-    // 1. Print the raw error in red text to your terminal
-    console.error("🔥 CRITICAL REGISTRATION ERROR:", error);
-
-    // 2. Safely pass the actual error message forward
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Server error during registration',
-      stack: process.env.NODE_ENV === 'production' ? null : error.stack
-    });
+    console.error('Registration error:', error);
+    next(new ApiError(500, 'Server error during registration', true, error.message));
   }
-}; // <--- THIS BRACKET WAS MISSING
+};
 
 /**
  * @desc    Authenticate user & get tokens
- * @route   POST /api/auth/login
+ * @route   POST /api/v1/auth/login
  * @access  Public
  */
 export const loginUser = async (req, res, next) => {
@@ -72,11 +66,17 @@ export const loginUser = async (req, res, next) => {
 
     const user = await User.findOne({ email });
 
-    // Use the custom model method to verify the password securely
     if (user && (await user.matchPassword(password))) {
       const { accessToken, refreshToken } = generateTokens(user._id, user.role);
 
-      res.status(200).json({
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({
         success: true,
         message: 'Login successful',
         user: {
@@ -86,24 +86,23 @@ export const loginUser = async (req, res, next) => {
           role: user.role,
         },
         accessToken,
-        refreshToken,
       });
-    } else {
-      return next(new ApiError(401, 'Invalid credentials.'));
     }
+
+    return next(new ApiError(401, 'Invalid credentials.'));
   } catch (error) {
-    next(new ApiError(500, 'Server error during login', error.message));
+    next(new ApiError(500, 'Server error during login', true, error.message));
   }
 };
 
 /**
- * @desc    Refresh Access Token
- * @route   POST /api/auth/refresh
+ * @desc    Refresh Access Token using httpOnly refresh token cookie
+ * @route   POST /api/v1/auth/refresh
  * @access  Public
  */
 export const refreshToken = async (req, res, next) => {
   try {
-    const { token } = req.body;
+    const token = req.cookies?.refreshToken;
 
     if (!token) {
       return next(new ApiError(401, 'Refresh token is required.'));
@@ -118,10 +117,16 @@ export const refreshToken = async (req, res, next) => {
 
     const newTokens = generateTokens(user._id, user.role);
 
+    res.cookie('refreshToken', newTokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(200).json({
       success: true,
       accessToken: newTokens.accessToken,
-      refreshToken: newTokens.refreshToken,
     });
   } catch (error) {
     next(new ApiError(401, 'Refresh token is expired or invalid.'));
@@ -130,9 +135,15 @@ export const refreshToken = async (req, res, next) => {
 
 /**
  * @desc    Logout User
- * @route   POST /api/auth/logout
+ * @route   POST /api/v1/auth/logout
  * @access  Public
  */
 export const logoutUser = (req, res, next) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 };

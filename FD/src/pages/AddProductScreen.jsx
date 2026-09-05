@@ -1,65 +1,48 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { 
   useCreateProductMutation, 
   useUploadProductImageMutation 
 } from '../services/productsApiSlice';
+import { Loader2 } from 'lucide-react';
 
 const AddProductScreen = () => {
-  // --- Form State ---
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [brand, setBrand] = useState('');
   const [category, setCategory] = useState('');
   const [countInStock, setCountInStock] = useState('');
   const [description, setDescription] = useState('');
-  const [image, setImage] = useState(''); // This will store the URL from the backend
-
-  // --- UI Feedback State ---
+  const [image, setImage] = useState('');
   const [message, setMessage] = useState('');
 
-  // --- RTK Query Hooks ---
   const [createProduct, { isLoading: isCreating, error: createError }] = useCreateProductMutation();
   const [uploadImage, { isLoading: isUploading, error: uploadError }] = useUploadProductImageMutation();
 
-  // ==========================================
-  // HANDLER: Image Upload (Step 1)
-  // ==========================================
   const uploadFileHandler = async (e) => {
-    // 1. Grab the file the user just selected
     const file = e.target.files[0];
-    
-    // 2. We MUST use FormData when sending physical files
     const formData = new FormData();
-    formData.append('image', file); // 'image' matches upload.single('image') on the backend
+    formData.append('image', file);
 
     try {
       setMessage('');
-      // 3. Fire the mutation to the backend
       const res = await uploadImage(formData).unwrap();
-      
-      // 4. Save the returned URL to our React state so we can preview it and submit it later
       setImage(res.data.url);
-      setMessage('Image uploaded successfully! Ready to submit.');
+      setMessage('Image uploaded successfully!');
     } catch (err) {
       console.error('Upload failed:', err);
     }
   };
 
-  // ==========================================
-  // HANDLER: Form Submission (Step 2)
-  // ==========================================
   const submitHandler = async (e) => {
     e.preventDefault();
     setMessage('');
 
-    // Basic validation
     if (!image) {
-      alert('Please upload an image first!');
+      setMessage('Please upload an image first!');
       return;
     }
 
     try {
-      // Send the complete product payload to MongoDB
       const res = await createProduct({
         name,
         price: Number(price),
@@ -67,13 +50,10 @@ const AddProductScreen = () => {
         category,
         countInStock: Number(countInStock),
         description,
-        image, // The URL we got from Step 1
+        image,
       }).unwrap();
 
       setMessage('Product created successfully!');
-      console.log('Created Product:', res);
-
-      // Clear the form after success
       setName('');
       setPrice('');
       setBrand('');
@@ -81,95 +61,142 @@ const AddProductScreen = () => {
       setCountInStock('');
       setDescription('');
       setImage('');
+      console.log('Created Product:', res);
     } catch (err) {
       console.error('Failed to create product:', err);
     }
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h2>Add New Architectural Product</h2>
-      
+    <div className="max-w-2xl mx-auto p-6">
+      <h2 className="text-2xl font-bold text-[#111827] mb-6">Add New Architectural Product</h2>
+
       {/* UI Notifications */}
-      {message && <div style={{ color: 'green', padding: '10px', backgroundColor: '#e6ffe6', marginBottom: '15px' }}>{message}</div>}
-      {uploadError && <div style={{ color: 'red', marginBottom: '15px' }}>{uploadError?.data?.message || 'Image upload failed'}</div>}
-      {createError && <div style={{ color: 'red', marginBottom: '15px' }}>{createError?.data?.message || 'Failed to create product'}</div>}
+      {message && (
+        <div className={`p-4 rounded-lg mb-6 ${message.includes('successfully') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {message}
+        </div>
+      )}
+      {uploadError && (
+        <div className="p-4 rounded-lg mb-6 bg-red-50 text-red-700 border border-red-200">
+          {uploadError?.data?.message || 'Image upload failed'}
+        </div>
+      )}
+      {createError && (
+        <div className="p-4 rounded-lg mb-6 bg-red-50 text-red-700 border border-red-200">
+          {createError?.data?.message || 'Failed to create product'}
+        </div>
+      )}
 
-      <form onSubmit={submitHandler} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        
-        {/* Name */}
+      <form onSubmit={submitHandler} className="space-y-6">
         <div>
-          <label>Product Name</label><br/>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+          />
         </div>
 
-        {/* Price & Stock (Side by side) */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div style={{ flex: 1 }}>
-            <label>Price ($)</label><br/>
-            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+            <input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+            />
           </div>
-          <div style={{ flex: 1 }}>
-            <label>Count In Stock</label><br/>
-            <input type="number" value={countInStock} onChange={(e) => setCountInStock(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Count In Stock</label>
+            <input
+              type="number"
+              value={countInStock}
+              onChange={(e) => setCountInStock(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+            />
           </div>
         </div>
 
-        {/* Brand & Category */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div style={{ flex: 1 }}>
-            <label>Brand / Manufacturer</label><br/>
-            <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Brand / Manufacturer</label>
+            <input
+              type="text"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+            />
           </div>
-          <div style={{ flex: 1 }}>
-            <label>Category</label><br/>
-            <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all"
+            />
           </div>
         </div>
 
-        {/* IMAGE UPLOAD SECTION */}
-        <div style={{ border: '1px dashed #ccc', padding: '15px', backgroundColor: '#f9f9f9' }}>
-          <label>Product Image</label><br/>
-          {/* Read-only input showing the path if successful */}
-          <input type="text" value={image} placeholder="Image URL will appear here" readOnly style={{ width: '100%', padding: '8px', marginBottom: '10px', backgroundColor: '#eee' }} />
-          
-          {/* The actual file input */}
-          <input type="file" onChange={uploadFileHandler} accept="image/jpeg, image/png, image/webp" />
-          {isUploading && <span style={{ marginLeft: '10px', color: 'blue' }}>Uploading image...</span>}
-
-          {/* Image Preview Window */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+          <input
+            type="file"
+            onChange={uploadFileHandler}
+            accept="image/jpeg, image/png, image/webp"
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#111827] file:text-white hover:file:bg-gray-800"
+          />
+          {isUploading && (
+            <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Uploading image...
+            </div>
+          )}
           {image && (
-            <div style={{ marginTop: '15px' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: 'gray' }}>Preview:</p>
-              {/* Remember: image contains "/uploads/filename.jpg". We prepend the backend URL to view it */}
-              <img src={`http://localhost:5000${image}`} alt="Product Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px' }} />
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 mb-2">Preview:</p>
+              <img
+                src={`http://localhost:5000${image}`}
+                alt="Product Preview"
+                className="max-w-full max-h-48 rounded-lg border border-gray-200"
+              />
             </div>
           )}
         </div>
 
-        {/* Description */}
         <div>
-          <label>Description</label><br/>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows="4" style={{ width: '100%', padding: '8px' }}></textarea>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            rows={4}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111827] focus:border-transparent outline-none transition-all resize-none"
+          />
         </div>
 
-        {/* Submit Button */}
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isCreating || isUploading}
-          style={{ 
-            padding: '12px', 
-            backgroundColor: (isCreating || isUploading) ? '#ccc' : '#28a745', 
-            color: 'white', 
-            border: 'none', 
-            cursor: (isCreating || isUploading) ? 'not-allowed' : 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-[#111827] text-white text-sm font-bold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isCreating ? 'Saving Product...' : 'Create Product'}
+          {isCreating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving Product...
+            </>
+          ) : (
+            'Create Product'
+          )}
         </button>
-
       </form>
     </div>
   );
