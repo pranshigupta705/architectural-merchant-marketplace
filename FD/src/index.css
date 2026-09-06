@@ -1,5 +1,5 @@
 /* 1. ALL IMPORTS MUST BE AT THE VERY TOP */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* 2. TAILWIND V4 LUXURY THEME */
@@ -14,7 +14,7 @@
   --color-ivory-dark: #EAE6DF;
   
   --font-sans: "Inter", system-ui, sans-serif;
-  --font-serif: "Playfair Display", Georgia, serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
 
   --shadow-premium: 0 10px 40px -10px rgba(26, 26, 26, 0.08);
   --shadow-premium-hover: 0 20px 40px -10px rgba(26, 26, 26, 0.12);
@@ -31,8 +31,12 @@
   body {
     background-color: var(--color-ivory);
     color: var(--color-charcoal);
-    font-family: var(--font-sans);
+    font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+
+  .font-serif {
+    font-family: "Cormorant Garamond", serif;
   }
 
   ::selection {

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // --- LAYOUT IMPORTS ---
 import DashboardLayout from "./layout/DashboardLayout";
@@ -61,16 +62,18 @@ export default function App() {
       {/* =========================================
           2. MERCHANT ADMIN DASHBOARD (Protected Domain)
            ========================================= */}
-      <Route path="/admin" element={<DashboardLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="inventory" element={<InventoryList />} />
-        <Route path="add-product/basic" element={<AddProductBasic />} />
-        <Route path="add-product/media" element={<AddProductMedia />} />
-        <Route path="add-product/logistics" element={<AddProductLogistics />} />
-        <Route path="orders" element={<OrdersList />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="customers" element={<CustomersList />} />
-        <Route path="settings" element={<Settings />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/admin" element={<DashboardLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="inventory" element={<InventoryList />} />
+          <Route path="add-product/basic" element={<AddProductBasic />} />
+          <Route path="add-product/media" element={<AddProductMedia />} />
+          <Route path="add-product/logistics" element={<AddProductLogistics />} />
+          <Route path="orders" element={<OrdersList />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="customers" element={<CustomersList />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
       </Route>
 
       {/* =========================================

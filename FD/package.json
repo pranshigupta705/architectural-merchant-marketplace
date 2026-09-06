@@ -11,13 +11,14 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.4.0",
     "@reduxjs/toolkit": "^2.12.0",
     "@stripe/react-stripe-js": "^6.8.2",
     "@stripe/stripe-js": "^9.15.0",
     "apexcharts": "^5.15.0",
     "axios": "^1.17.0",
-    "framer-motion": "^12.40.0",
+    "framer-motion": "^12.43.0",
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-apexcharts": "^2.1.0",

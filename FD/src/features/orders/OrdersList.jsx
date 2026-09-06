@@ -14,7 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Card from "../../components/ui/Card";
-import { useGetOrdersQuery } from "../../services/productsApiSlice";
+import { useGetOrdersQuery } from "../../services/ordersApiSlice";
 
 const renderStatusBadge = (status) => {
   switch (status) {
